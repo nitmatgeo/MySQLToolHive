@@ -2,9 +2,9 @@
 $debugMode = $false
 
 # Define root path and raw file name
-$rootPath = "C:\Users\nitin.mathew.george\Downloads\MySQLToolHive\SQL Server Schema Craft Studio\Data\Logs"
+$rootPath = "C:\Users\nitin.mathew.george\Downloads\MySQLToolHive\SQL Server Schema Craft Studio"
 $rawFileName = "00.rawDumpOutput.json"
-$logFilePath = "$rootPath\TestLog_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
+$logFilePath = "$rootPath\Data\Logs\TestLog_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
 
 # Capture the start time
 $executionStartTime = Get-Date

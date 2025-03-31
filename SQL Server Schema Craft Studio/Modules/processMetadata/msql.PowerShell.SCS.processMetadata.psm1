@@ -2,16 +2,14 @@
 function Extract-ValidJsonContent {
     param (
         [string]$rawFilePath, # Path to the raw JSON file
+        [string]$startPattern, # Pattern for the starting line
+        [string]$endPattern, # Pattern for the ending line
         [string]$logFilePath = $null, # Optional: Path to a log file
-        [bool]$debugMode = $false  # Enable or disable debugging output
+        [bool]$debugMode = $false      # Enable or disable debugging output
     )
 
     # Log the start of JSON extraction
     Log-Message -message "Extracting valid JSON content from file: $rawFilePath" -level "Information" -debugMode $debugMode -logFilePath $logFilePath
-
-    # Define the start and end patterns as variables
-    $startPattern = '{"schema_name":'  # Pattern for the starting line
-    $endPattern = '\}\]\}$'            # Pattern for the ending line
 
     try {
         # Read the raw file content
@@ -116,7 +114,7 @@ function Process-JSON {
 
     try {
         # Load the valid JSON content from the raw file
-        $jsonRawContent = Extract-ValidJsonContent -rawFilePath $inputFile -debugMode $debugMode
+        $jsonRawContent = Extract-ValidJsonContent -rawFilePath $rawFilePath -startPattern '{"schema_name":' -endPattern '\}\]\}$' -logFilePath $logFilePath -debugMode $debugMode
 
         # Validate the extracted JSON content
         if ($null -eq $jsonRawContent) {
