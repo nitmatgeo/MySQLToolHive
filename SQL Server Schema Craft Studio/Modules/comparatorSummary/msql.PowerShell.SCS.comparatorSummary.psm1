@@ -128,7 +128,7 @@ function Generate-Summary {
         }
 
         # Save the consolidated summary to the output file
-        $summaryOutputFile = Join-Path -Path $summaryOutputPath -ChildPath "ConsolidatedSummary_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
+        $summaryOutputFile = Join-Path -Path $summaryOutputPath -ChildPath "Summary_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
         $consolidatedSummary | Export-Csv -Path $summaryOutputFile -NoTypeInformation
 
         # Log the successful completion of summary generation
