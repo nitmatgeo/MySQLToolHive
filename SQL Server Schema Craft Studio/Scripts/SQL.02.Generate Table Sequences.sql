@@ -537,11 +537,11 @@
 			(
 				SELECT 
 					'[' + TargetSchema + '].[' + TargetTable + ']' AS FullTableName, 
-					SchemaPriority, 
-					TargetSchema, 
-					TargetTable, 
-					SectionLevel, 
-					TableLevel, 
+					SchemaPriority AS schema_priority, 
+					TargetSchema AS schema_name, 
+					TargetTable AS table_name, 
+					SectionLevel AS section_level, 
+					TableLevel AS table_level, 
 					DENSE_RANK() OVER(ORDER BY SectionLevel, TableLevel, SchemaPriority) AS Hierarchy 
 				FROM #TableHierarchy A
 				WHERE A.TargetSchema = B.TargetSchema AND A.TargetTable = B.TargetTable

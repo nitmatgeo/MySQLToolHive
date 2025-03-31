@@ -116,7 +116,7 @@ function Process-JSON {
 
     try {
         # Load the valid JSON content from the raw file
-        $jsonRawContent = Extract-ValidJsonContent -rawFilePath $rawFilePath -startPattern $startPattern -endPattern $endPattern -debugMode $debugMode -logFilePath $logFilePath
+        $jsonRawContent = Extract-ValidJsonContent -rawFilePath $inputFile -startPattern $startPattern -endPattern $endPattern -debugMode $debugMode -logFilePath $logFilePath
 
         # Validate the extracted JSON content
         if ($null -eq $jsonRawContent) {
