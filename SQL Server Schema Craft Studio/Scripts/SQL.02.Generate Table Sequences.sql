@@ -554,5 +554,5 @@
 	GROUP BY TargetSchema, TargetTable
 	
 	PRINT '$(OutputPath)'
-	--:OUT $(OutputPath)\00.rawHierarchyOutput.json
+	--:OUT $(OutputPath)\00.rawHierarchyOutput.dat
 	SELECT table_hierarchy FROM #HierarchySQLDB_JSON

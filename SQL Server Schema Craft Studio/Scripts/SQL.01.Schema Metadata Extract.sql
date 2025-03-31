@@ -148,5 +148,5 @@ FROM #AllDBObjectsExtendedMetadata AS meta
 GROUP BY schema_name, table_name
 ORDER BY schema_name, table_name;
 
---:OUT "$(OutputPath)\00.rawDumpOutput.json"
+--:OUT "$(OutputPath)\00.rawDumpOutput.dat"
 SELECT table_metadata FROM #MetadataSQLDB_JSON
