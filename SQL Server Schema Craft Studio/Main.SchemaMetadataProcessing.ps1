@@ -2,7 +2,7 @@
 $debugMode = $false
 
 # Define root path and raw file name
-$rootPath = "C:\Users\nitin.mathew.george\Downloads\MySQLToolHive\SQL Server Schema Craft Studio"
+$rootPath = "C:\Users\nitin.mathew.george\Downloads\MySQLToolHive\SQL Server Schema Craft Studio\Data\Logs"
 $rawFileName = "00.rawDumpOutput.json"
 $logFilePath = "$rootPath\TestLog_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
 
