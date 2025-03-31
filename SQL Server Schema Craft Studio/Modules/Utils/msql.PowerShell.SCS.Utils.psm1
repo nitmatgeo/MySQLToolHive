@@ -57,11 +57,11 @@ Export-ModuleMember -Function Log-Message
 # Function: Initialize-Script
 function Initialize-Script {
     param (
-        [string]$rootPath, # Root path for the JSON files
-        [string]$version, # Version folder (e.g., "version (n-1)")
-        [string]$rawFileName, # Raw JSON file name (e.g., "00.rawDumpOutput.json")
-        [string]$logFilePath = $null, # Optional: Path to a log file
-        [bool]$debugMode        # Enable or disable debugging output
+        [string]$rootPath,             # Root path for the JSON files
+        [string]$version,              # Version folder (e.g., "version (n-1)")
+        [string]$rawFileName,          # Raw partial-JSON file name (e.g., "00.rawDumpOutput.dat")
+        [string]$logFilePath = $null,  # Optional: Path to a log file
+        [bool]$debugMode               # Enable or disable debugging output
     )
 
     # Define the input JSON file and output folder based on the parameters
@@ -76,10 +76,10 @@ function Initialize-Script {
     # Ensure the output folder exists or is cleaned up except for the input file
     try {
         if (Test-Path -Path $outputFolder) {
-            Log-Message -message "Output folder exists. Cleaning up files except for the input file..." -level "Information" -debugMode $debugMode -logFilePath $logFilePath
+            Log-Message -message "Output folder exists. Cleaning up JSON files except for the input file..." -level "Information" -debugMode $debugMode -logFilePath $logFilePath
 
-            # Get all files in the output folder except the input file
-            Get-ChildItem -Path $outputFolder -File | Where-Object { $_.FullName -ne $inputFile } | ForEach-Object {
+            # Get all JSON files in the output folder except the input file
+            Get-ChildItem -Path $outputFolder -Filter "*.json" -File | Where-Object { $_.FullName -ne $inputFile } | ForEach-Object {
                 Log-Message -message "Removing file: $($_.FullName)" -level "Debug" -debugMode $debugMode -logFilePath $logFilePath
                 Remove-Item -Path $_.FullName -Force
             }
