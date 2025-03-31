@@ -103,6 +103,8 @@ function Process-JSON {
     param (
         [string]$inputFile, # Input JSON file
         [string]$outputFolder, # Output folder for processed files
+        [string]$startPattern, # Pattern for the starting line
+        [string]$endPattern, # Pattern for the ending line
         [string]$logFilePath = $null, # Optional: Path to a log file
         [bool]$debugMode = $false # Enable or disable debugging output
     )
@@ -114,7 +116,7 @@ function Process-JSON {
 
     try {
         # Load the valid JSON content from the raw file
-        $jsonRawContent = Extract-ValidJsonContent -rawFilePath $rawFilePath -startPattern '{"schema_name":' -endPattern '\}\]\}$' -logFilePath $logFilePath -debugMode $debugMode
+        $jsonRawContent = Extract-ValidJsonContent -rawFilePath $rawFilePath -startPattern $startPattern -endPattern $endPattern -debugMode $debugMode -logFilePath $logFilePath
 
         # Validate the extracted JSON content
         if ($null -eq $jsonRawContent) {
