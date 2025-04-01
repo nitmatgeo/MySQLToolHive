@@ -70,8 +70,8 @@ try {
     $comparisonLogFile = Join-Path -Path "$rootPath\Data\Outputs" -ChildPath "ComparisonLog_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
 
     # Load JSON data for both versions
-    $dataN = Load-JsonData -folderPath $resultN.OutputFolder -rawFileNameToIgnore $rawFileName -debugMode $debugMode -logFilePath $logFilePath
-    $dataNMinus1 = Load-JsonData -folderPath $resultNMinus1.OutputFolder -rawFileNameToIgnore $rawFileName -debugMode $debugMode -logFilePath $logFilePath
+    $dataN = Load-JsonData -folderPath $resultN.RootFolder -rawFileNameToIgnore $rawFileName -debugMode $debugMode -logFilePath $logFilePath
+    $dataNMinus1 = Load-JsonData -folderPath $resultNMinus1.RootFolder -rawFileNameToIgnore $rawFileName -debugMode $debugMode -logFilePath $logFilePath
     
     # Compare the data
     $comparisonResults = Compare-Data -dataN $dataN -dataNMinus1 $dataNMinus1 -debugMode $debugMode -logFilePath $logFilePath
