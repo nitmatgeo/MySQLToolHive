@@ -59,14 +59,17 @@ function Initialize-Script {
     param (
         [string]$rootPath,             # Root path for the JSON files
         [string]$version,              # Version folder (e.g., "version (n-1)")
-        [string]$rawFileName,          # Raw partial-JSON file name (e.g., "00.rawDumpOutput.dat")
+        [string]$rawFileName,          # Raw partial-JSON file name (e.g., "00.rawSchemaMetadataOutput.dat")
         [string]$logFilePath = $null,  # Optional: Path to a log file
         [bool]$debugMode               # Enable or disable debugging output
     )
 
+    # Generate a 5-character hex string based on the raw file name
+    $hashTempFolder = [System.BitConverter]::ToString((New-Object -TypeName System.Security.Cryptography.SHA256Managed).ComputeHash([System.Text.Encoding]::UTF8.GetBytes($rawFileName))).Replace("-", "").Substring(0, 5)
+
     # Define the input JSON file and output folder based on the parameters
     $inputFile = Join-Path -Path $rootPath -ChildPath "$version\$rawFileName"
-    $outputFolder = Join-Path -Path $rootPath -ChildPath $version
+    $outputFolder = Join-Path -Path $rootPath -ChildPath "$version\$hashTempFolder"
 
     # Log debugging information
     Log-Message -message "Initializing script for version: $version" -level "Information" -debugMode $debugMode -logFilePath $logFilePath
