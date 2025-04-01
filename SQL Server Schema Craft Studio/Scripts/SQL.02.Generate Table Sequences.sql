@@ -1,4 +1,4 @@
---:SETVAR OutputPath "C:\Users\GeorgeN\OneDrive - MHRA\02 RC DB\Scripts\SQL Server Schema Craft Studio\Data\Inputs\version (n)"
+-- :SETVAR OutputPath "C:\Users\GeorgeN\OneDrive - MHRA\02 RC DB\Scripts\SQL Server Schema Craft Studio\Data\Inputs\version (n)"
 /*--<< STEP 00-A >>--*****************************************************************************************************************************
 	(i)		Extract the Schema & Database Metadata across all tables in-scope
 ******--------------------------------------------------------------------------------------------------------------------------------------******/
@@ -407,6 +407,7 @@
 		TargetTable VARCHAR(255) COLLATE SQL_Latin1_General_CP1_CI_AS ,
 		SectionLevel INT,
 		TableLevel INT,
+		Hierarchy INT
 	);
 
 	INSERT INTO #TableHierarchy (SchemaPriority, TargetSchema, TargetTable, SectionLevel, TableLevel)
@@ -528,31 +529,50 @@
 	(i)		Use the #TableHierarchy and rank based on SectionLevel, TableLevel, SchemaPriority to derive the Hierarchy
 ******--------------------------------------------------------------------------------------------------------------------------------------******/
 --FINAL OUTPUT::
-	--SELECT *, DENSE_RANK() OVER(ORDER BY SectionLevel, TableLevel, SchemaPriority) AS Hierarchy FROM #TableHierarchy	
-	IF OBJECT_ID('tempdb..#HierarchySQLDB_JSON') IS NOT NULL DROP TABLE #HierarchySQLDB_JSON;
-	SELECT 
-		TargetSchema,
-		TargetTable,
-		JSON_QUERY(
-			(
-				SELECT 
-					'[' + TargetSchema + '].[' + TargetTable + ']' AS FullTableName, 
-					SchemaPriority AS schema_priority, 
-					TargetSchema AS schema_name, 
-					TargetTable AS table_name, 
-					SectionLevel AS section_level, 
-					TableLevel AS table_level, 
-					DENSE_RANK() OVER(ORDER BY SectionLevel, TableLevel, SchemaPriority) AS Hierarchy 
-				FROM #TableHierarchy A
-				WHERE A.TargetSchema = B.TargetSchema AND A.TargetTable = B.TargetTable
-				ORDER BY A.TargetTable
-				FOR JSON PATH, INCLUDE_NULL_VALUES, WITHOUT_ARRAY_WRAPPER
-			)
-		) AS table_hierarchy
-	INTO #HierarchySQLDB_JSON
-	FROM #TableHierarchy B
-	GROUP BY TargetSchema, TargetTable
-	
+	--SELECT *, DENSE_RANK() OVER(ORDER BY SectionLevel, TableLevel, SchemaPriority) AS Hierarchy FROM #TableHierarchy
+
+	UPDATE TH1
+	SET Hierarchy = TH2.Hierarchy
+	FROM #TableHierarchy TH1
+	JOIN
+	(
+		SELECT 
+			ID,
+			SchemaPriority,
+			TargetSchema,
+			TargetTable,
+			SectionLevel,
+			TableLevel,
+			DENSE_RANK() OVER(ORDER BY SectionLevel, TableLevel, SchemaPriority) AS Hierarchy 
+		FROM #TableHierarchy
+	)TH2
+		ON TH1.ID = TH2.ID
+
 	PRINT '$(OutputPath)'
-	--:OUT $(OutputPath)\00.rawHierarchyOutput.dat
-	SELECT table_hierarchy FROM #HierarchySQLDB_JSON
+	-- :OUT $(OutputPath)\00.rawHierarchyOutput.dat
+	SELECT table_hierarchy FROM
+	(
+		SELECT
+			ID,
+			TargetSchema,
+			TargetTable,
+			JSON_QUERY(
+				(
+					SELECT 
+						'[' + TargetSchema + '].[' + TargetTable + ']' AS FullTableName, 
+						SchemaPriority AS schema_priority, 
+						TargetSchema AS schema_name, 
+						TargetTable AS table_name, 
+						SectionLevel AS section_level, 
+						TableLevel AS table_level, 
+						Hierarchy 
+					FROM #TableHierarchy TH1
+					WHERE TH1.ID = TH2.ID
+					ORDER BY TH1.TargetTable
+					FOR JSON PATH, INCLUDE_NULL_VALUES, WITHOUT_ARRAY_WRAPPER
+				)
+			) AS table_hierarchy
+		--INTO #HierarchySQLDB_JSON
+		FROM #TableHierarchy TH2
+		GROUP BY ID, TargetSchema, TargetTable
+	)X
