@@ -1,4 +1,4 @@
--- :SETVAR OutputPath "C:\Users\GeorgeN\OneDrive - MHRA\02 RC DB\Scripts\SQL Server Schema Craft Studio\Data\Inputs\version (n)"
+-- :SETVAR OutputPath "C:\Users\...\SQL Server Schema Craft Studio\Data\Inputs\version (n)"
 /*--<< STEP 00-A >>--*****************************************************************************************************************************
 	(i)		Extract the Schema & Database Metadata across all tables in-scope
 ******--------------------------------------------------------------------------------------------------------------------------------------******/

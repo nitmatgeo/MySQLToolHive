@@ -1,4 +1,4 @@
---:SETVAR OutputPath "C:\..."
+-- :SETVAR OutputPath "C:\Users\...\SQL Server Schema Craft Studio\Data\Inputs\version (n)"
 
 IF OBJECT_ID('tempdb..#AllDBObjectsExtendedMetadata') IS NOT NULL DROP TABLE #AllDBObjectsExtendedMetadata
 SELECT
@@ -148,5 +148,5 @@ FROM #AllDBObjectsExtendedMetadata AS meta
 GROUP BY schema_name, table_name
 ORDER BY schema_name, table_name;
 
---:OUT "$(OutputPath)\00.rawSchemaMetadataOutput.dat"
+--:OUT $(OutputPath)\00.rawSchemaMetadataOutput.dat
 SELECT table_metadata FROM #MetadataSQLDB_JSON
