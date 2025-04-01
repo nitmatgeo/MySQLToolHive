@@ -220,6 +220,12 @@ function Merge-JsonFiles {
                     $jsonA.Hierarchy = $jsonB.Hierarchy
                     $jsonString = [Newtonsoft.Json.JsonConvert]::SerializeObject($jsonA, [Newtonsoft.Json.Formatting]::Indented)
 
+                    # Debugging output to inspect item counts
+                    if ($debugMode) {
+                        $mergedJson = $jsonString | ConvertFrom-Json -ErrorAction Stop
+                        Log-Message -message "Merged JSON item counts:\nFullTableName = $($mergedJson.FullTableName)\nAvailable metadata for Columns = $($mergedJson.Columns.Count)\nschema_priority = $($mergedJson.schema_priority)\nsection_level = $($mergedJson.section_level)\ntable_level = $($mergedJson.table_level)\nHierarchy = $($mergedJson.Hierarchy)" -level "Debug" -debugMode $debugMode -logFilePath $logFilePath
+                    }
+
                     # Save the merged JSON to the output folder
                     $outputFile = Join-Path -Path $outputFolder -ChildPath $fileName
                     Set-Content -Path $outputFile -Value $jsonString
