@@ -1,9 +1,11 @@
 # Enable or disable debug mode
-$debugMode = $false
+$debugMode = $true
 
 # Define root path and raw file name
 $rootPath = "C:\Users\nitin.mathew.george\Downloads\MySQLToolHive\SQL Server Schema Craft Studio"
-$rawFileName = "00.rawDumpOutput.json"
+$rawFileName = "00.rawSchemaMetadataOutput.dat"
+$rawFileStartPattern = '{"schema_name":'
+$rawFileEndPattern = '\}\]\}$'
 $logFilePath = "$rootPath\Data\Logs\TestLog_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
 
 # Capture the start time
@@ -22,18 +24,46 @@ try {
 
     # Check required modules
     Check-Modules -debugMode $debugMode
+    
+    # Initialize and process Schema Metadata JSON for "version (n-1)"
+    Log-Message -message "Processing Schema Metadata JSON for version (n-1)..." -level "Information" -debugMode $debugMode -logFilePath $logFilePath
+    $resultNMinus1 = Initialize-Folder -rootPath "$rootPath\Data\Inputs" -version "version (n-1)" -rawFileName $rawFileName -debugMode $debugMode -logFilePath $logFilePath
+    $validJsonContentNMinus1 = Extract-ValidJsonContent -rawFilePath $resultNMinus1.InputFile -startPattern $rawFileStartPattern -endPattern $rawFileEndPattern -debugMode $debugMode -logFilePath $logFilePath
+    Process-JSON -jsonRawContent $validJsonContentNMinus1 -outputFolder $resultNMinus1.OutputFolder -debugMode $debugMode -logFilePath $logFilePath
 
-    # Initialize and process JSON for "version (n-1)"
-    Log-Message -message "Processing version (n-1)..." -level "Information" -debugMode $debugMode -logFilePath $logFilePath
-    $resultNMinus1 = Initialize-Script -rootPath "$rootPath\Data\Inputs" -version "version (n-1)" -rawFileName $rawFileName -debugMode $debugMode -logFilePath $logFilePath
-    $validJsonContentNMinus1 = Extract-ValidJsonContent -rawFilePath $resultNMinus1.InputFile -debugMode $debugMode -logFilePath $logFilePath
-    Process-JSON -inputFile $resultNMinus1.InputFile -outputFolder $resultNMinus1.OutputFolder -debugMode $debugMode -logFilePath $logFilePath
+    # Initialize and process Schema Metadata JSON for "version (n)"
+    Log-Message -message "Processing Schema Metadata JSON for version (n)..." -level "Information" -debugMode $debugMode -logFilePath $logFilePath
+    $resultN = Initialize-Folder -rootPath "$rootPath\Data\Inputs" -version "version (n)" -rawFileName $rawFileName -debugMode $debugMode -logFilePath $logFilePath
+    $validJsonContentN = Extract-ValidJsonContent -rawFilePath $resultN.InputFile -startPattern $rawFileStartPattern -endPattern $rawFileEndPattern -debugMode $debugMode -logFilePath $logFilePath
+    Process-JSON -jsonRawContent $validJsonContentN -outputFolder $resultN.OutputFolder -debugMode $debugMode -logFilePath $logFilePath
 
-    # Initialize and process JSON for "version (n)"
-    Log-Message -message "Processing version (n)..." -level "Information" -debugMode $debugMode -logFilePath $logFilePath
-    $resultN = Initialize-Script -rootPath "$rootPath\Data\Inputs" -version "version (n)" -rawFileName $rawFileName -debugMode $debugMode -logFilePath $logFilePath
-    $validJsonContentN = Extract-ValidJsonContent -rawFilePath $resultN.InputFile -debugMode $debugMode -logFilePath $logFilePath
-    Process-JSON -inputFile $resultN.InputFile -outputFolder $resultN.OutputFolder -debugMode $debugMode -logFilePath $logFilePath
+    Log-Message -message "Processing Hierarchy Metadata JSON for version (n-1)..." -level "Information" -debugMode $debugMode -logFilePath $logFilePath
+    $hierarchyNMinus1 = Initialize-Folder -rootPath "$rootPath\Data\Inputs" -version "version (n-1)" -rawFileName "00.rawHierarchyOutput.dat" -debugMode $debugMode -logFilePath $logFilePath
+    $validJsonhierarchyContentNMinus1 = Extract-ValidJsonContent -rawFilePath $hierarchyNMinus1.InputFile -startPattern '{"FullTableName":' -endPattern '}' -debugMode $debugMode -logFilePath $logFilePath
+    Process-JSON -jsonRawContent $validJsonhierarchyContentNMinus1 -outputFolder $hierarchyNMinus1.OutputFolder -debugMode $debugMode -logFilePath $logFilePath
+
+    Log-Message -message "Processing Hierarchy Metadata JSON for version (n)..." -level "Information" -debugMode $debugMode -logFilePath $logFilePath
+    $hierarchyN = Initialize-Folder -rootPath "$rootPath\Data\Inputs" -version "version (n)" -rawFileName "00.rawHierarchyOutput.dat" -debugMode $debugMode -logFilePath $logFilePath
+    $validJsonhierarchyContentN = Extract-ValidJsonContent -rawFilePath $hierarchyN.InputFile -startPattern '{"FullTableName":' -endPattern '}' -debugMode $debugMode -logFilePath $logFilePath
+    Process-JSON -jsonRawContent $validJsonhierarchyContentN -outputFolder $hierarchyN.OutputFolder -debugMode $debugMode -logFilePath $logFilePath
+    
+    # Initialize and merge Metadata JSONs (Schema & Hierarchy) for "version (n-1)"
+    Log-Message -message "Merging Schema Metadata JSONs for version (n-1)..." -level "Information" -debugMode $debugMode -logFilePath $logFilePath
+    $resultMergeNMinus1 = Initialize-Folder -rootPath "$rootPath\Data\Inputs" -version "version (n-1)" -debugMode $debugMode -logFilePath $logFilePath
+    Merge-JsonFiles -folderPathA $resultNMinus1.OutputFolder `
+        -folderPathB $hierarchyNMinus1.OutputFolder `
+        -outputFolder $resultNMinus1.RootFolder `
+        -debugMode $debugMode `
+        -logFilePath $logFilePath
+    
+    # Initialize and merge Metadata JSONs (Schema & Hierarchy) for "version (n)"
+    Log-Message -message "Merging Schema Metadata JSONs for version (n)..." -level "Information" -debugMode $debugMode -logFilePath $logFilePath
+    $resultMergeN = Initialize-Folder -rootPath "$rootPath\Data\Inputs" -version "version (n)" -debugMode $debugMode -logFilePath $logFilePath
+    Merge-JsonFiles -folderPathA $resultN.OutputFolder `
+        -folderPathB $hierarchyN.OutputFolder `
+        -outputFolder $resultN.RootFolder `
+        -debugMode $debugMode `
+        -logFilePath $logFilePath
 
     # Invoke the comparator
     Log-Message -message "Invoking the comparator to compare version (n) and version (n-1)..." -level "Information" -debugMode $debugMode -logFilePath $logFilePath
