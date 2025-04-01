@@ -54,19 +54,25 @@ function Log-Message {
 # Export the Log-Message function
 Export-ModuleMember -Function Log-Message
 
-# Function: Initialize-Script
-function Initialize-Script {
+# Function: Initialize-Folder
+function Initialize-Folder {
     param (
         [string]$rootPath, # Root path for the JSON files
         [string]$version, # Version folder (e.g., "version (n-1)")
-        [string]$rawFileName, # Raw JSON file name (e.g., "00.rawDumpOutput.json")
+        [string]$rawFileName = $null, # Raw partial-JSON file name (e.g., "00.rawSchemaMetadataOutput.dat")
         [string]$logFilePath = $null, # Optional: Path to a log file
-        [bool]$debugMode        # Enable or disable debugging output
+        [bool]$debugMode               # Enable or disable debugging output
     )
+
+    # Generate a 5-character hex string based on the raw file name
+    if ($null -ne $rawFileName -and $rawFileName -ne "") {
+        $hashTempFolder = [System.BitConverter]::ToString((New-Object -TypeName System.Security.Cryptography.SHA256Managed).ComputeHash([System.Text.Encoding]::UTF8.GetBytes($rawFileName))).Replace("-", "").Substring(0, 5)
+    }
 
     # Define the input JSON file and output folder based on the parameters
     $inputFile = Join-Path -Path $rootPath -ChildPath "$version\$rawFileName"
-    $outputFolder = Join-Path -Path $rootPath -ChildPath $version
+    $rootFolder = Join-Path -Path $rootPath -ChildPath "$version"
+    $outputFolder = Join-Path -Path $rootPath -ChildPath "$version\$hashTempFolder"
 
     # Log debugging information
     Log-Message -message "Initializing script for version: $version" -level "Information" -debugMode $debugMode -logFilePath $logFilePath
@@ -76,10 +82,10 @@ function Initialize-Script {
     # Ensure the output folder exists or is cleaned up except for the input file
     try {
         if (Test-Path -Path $outputFolder) {
-            Log-Message -message "Output folder exists. Cleaning up files except for the input file..." -level "Information" -debugMode $debugMode -logFilePath $logFilePath
+            Log-Message -message "Output folder exists. Cleaning up JSON files except for the input file..." -level "Information" -debugMode $debugMode -logFilePath $logFilePath
 
-            # Get all files in the output folder except the input file
-            Get-ChildItem -Path $outputFolder -File | Where-Object { $_.FullName -ne $inputFile } | ForEach-Object {
+            # Get all JSON files in the output folder except the input file
+            Get-ChildItem -Path $outputFolder -Filter "*.json" -File | Where-Object { $_.FullName -ne $inputFile } | ForEach-Object {
                 Log-Message -message "Removing file: $($_.FullName)" -level "Debug" -debugMode $debugMode -logFilePath $logFilePath
                 Remove-Item -Path $_.FullName -Force
             }
@@ -100,6 +106,7 @@ function Initialize-Script {
     return @{
         InputFile    = $inputFile
         OutputFolder = $outputFolder
+        RootFolder   = $rootFolder
     }
 }
 
@@ -143,4 +150,4 @@ function Check-Modules {
 }
 
 # Export the functions
-Export-ModuleMember -Function Initialize-Script, Check-Modules
+Export-ModuleMember -Function Initialize-Folder, Check-Modules

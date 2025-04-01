@@ -2,16 +2,14 @@
 function Extract-ValidJsonContent {
     param (
         [string]$rawFilePath, # Path to the raw JSON file
+        [string]$startPattern, # Pattern for the starting line
+        [string]$endPattern, # Pattern for the ending line
         [string]$logFilePath = $null, # Optional: Path to a log file
-        [bool]$debugMode = $false  # Enable or disable debugging output
+        [bool]$debugMode = $false      # Enable or disable debugging output
     )
 
     # Log the start of JSON extraction
     Log-Message -message "Extracting valid JSON content from file: $rawFilePath" -level "Information" -debugMode $debugMode -logFilePath $logFilePath
-
-    # Define the start and end patterns as variables
-    $startPattern = '{"schema_name":'  # Pattern for the starting line
-    $endPattern = '\}\]\}$'            # Pattern for the ending line
 
     try {
         # Read the raw file content
@@ -103,7 +101,7 @@ function Extract-ValidJsonContent {
 # Function to Process JSON Files
 function Process-JSON {
     param (
-        [string]$inputFile, # Input JSON file
+        [string]$jsonRawContent, # Input the valid JSON content from the raw file
         [string]$outputFolder, # Output folder for processed files
         [string]$logFilePath = $null, # Optional: Path to a log file
         [bool]$debugMode = $false # Enable or disable debugging output
@@ -111,15 +109,12 @@ function Process-JSON {
 
     # Log the start of JSON processing
     Log-Message -message "Processing JSON files..." -level "Information" -debugMode $debugMode -logFilePath $logFilePath
-    Log-Message -message "Input File: $inputFile" -level "Debug" -debugMode $debugMode -logFilePath $logFilePath
     Log-Message -message "Output Folder: $outputFolder" -level "Debug" -debugMode $debugMode -logFilePath $logFilePath
 
     try {
-        # Load the valid JSON content from the raw file
-        $jsonRawContent = Extract-ValidJsonContent -rawFilePath $inputFile -debugMode $debugMode
-
+        
         # Validate the extracted JSON content
-        if ($null -eq $jsonRawContent) {
+        if (($null -eq $jsonRawContent) -or ($jsonRawContent -eq "")) {
             Log-Message -message "Error: Failed to extract valid JSON content from the raw file." -level "Error" -logFilePath $logFilePath
             throw "Failed to extract valid JSON content from the raw file."
         }
@@ -127,6 +122,7 @@ function Process-JSON {
         # Parse the JSON content
         try {
             $jsonContent = $jsonRawContent | ConvertFrom-Json -ErrorAction Stop
+            Log-Message -message "Items read from the input JSON Data: $($jsonContent.count)" -level "Debug" -debugMode $debugMode -logFilePath $logFilePath
         }
         catch {
             Log-Message -message "Error parsing JSON: $($_.Exception.Message)" -level "Error" -logFilePath $logFilePath
@@ -176,5 +172,82 @@ function Process-JSON {
         # Log errors during JSON processing
         Log-Message -message "Error processing JSON files: $($_.Exception.Message)" -level "Error" -logFilePath $logFilePath
         throw "Error processing JSON files: $($_.Exception.Message)"
+    }
+}
+
+# Function to Merge any 2 JSON Files
+function Merge-JsonFiles {
+    param (
+        [string]$folderPathA, # Folder path for subfolder A
+        [string]$folderPathB, # Folder path for subfolder B
+        [string]$outputFolder, # Folder path to save merged JSON files
+        [string]$logFilePath = $null, # Optional: Path to a log file
+        [bool]$debugMode = $false      # Enable or disable debugging output
+    )
+
+    # Log the start of the merge process
+    Log-Message -message "Starting JSON merge process..." -level "Information" -debugMode $debugMode -logFilePath $logFilePath
+    Log-Message -message "Folder A: $folderPathA" -level "Debug" -debugMode $debugMode -logFilePath $logFilePath
+    Log-Message -message "Folder B: $folderPathB" -level "Debug" -debugMode $debugMode -logFilePath $logFilePath
+    Log-Message -message "Output Folder: $outputFolder" -level "Debug" -debugMode $debugMode -logFilePath $logFilePath
+
+    try {
+        # Ensure the output folder exists
+        if (-not (Test-Path -Path $outputFolder)) {
+            New-Item -ItemType Directory -Path $outputFolder -Force | Out-Null
+        }
+
+        # Get all JSON files from both folders
+        $filesA = Get-ChildItem -Path $folderPathA -Filter "*.json" -File
+
+        # Iterate through files in folder A
+        foreach ($fileA in $filesA) {
+            $fileName = $fileA.Name
+            $filePathB = Join-Path -Path $folderPathB -ChildPath $fileName
+
+            try {
+                # Check if a matching file exists in folder B
+                if (Test-Path -Path $filePathB) {
+                    # Read and deserialize both JSON files using Newtonsoft.Json
+                    $jsonA = [Newtonsoft.Json.JsonConvert]::DeserializeObject((Get-Content -Path $fileA.FullName -Raw))
+                    $jsonB = [Newtonsoft.Json.JsonConvert]::DeserializeObject((Get-Content -Path $filePathB -Raw))
+
+                    # Manually add Hierarchy properties from jsonB to jsonA
+                    $jsonA.FullTableName = $jsonB.FullTableName
+                    $jsonA.schema_priority = $jsonB.schema_priority
+                    $jsonA.section_level = $jsonB.section_level
+                    $jsonA.table_level = $jsonB.table_level
+                    $jsonA.Hierarchy = $jsonB.Hierarchy
+                    $jsonString = [Newtonsoft.Json.JsonConvert]::SerializeObject($jsonA, [Newtonsoft.Json.Formatting]::Indented)
+
+                    # Debugging output to inspect item counts
+                    if ($debugMode) {
+                        $mergedJson = $jsonString | ConvertFrom-Json -ErrorAction Stop
+                        Log-Message -message "Merged JSON item counts:\nFullTableName = $($mergedJson.FullTableName)\nAvailable metadata for Columns = $($mergedJson.Columns.Count)\nschema_priority = $($mergedJson.schema_priority)\nsection_level = $($mergedJson.section_level)\ntable_level = $($mergedJson.table_level)\nHierarchy = $($mergedJson.Hierarchy)" -level "Debug" -debugMode $debugMode -logFilePath $logFilePath
+                    }
+
+                    # Save the merged JSON to the output folder
+                    $outputFile = Join-Path -Path $outputFolder -ChildPath $fileName
+                    Set-Content -Path $outputFile -Value $jsonString
+
+                    if ($debugMode) {
+                        Log-Message -message "Merged file saved: $outputFile" -level "Information" -debugMode $debugMode -logFilePath $logFilePath
+                    }
+                }
+                else {
+                    Log-Message -message "No matching file found for $fileName in folder B." -level "Warning" -debugMode $debugMode -logFilePath $logFilePath
+                }
+            }
+            catch {
+                Log-Message -message "Error merging file $($fileName): $($_.Exception.Message)" -level "Error" -logFilePath $logFilePath
+            }
+        }
+
+        Log-Message -message "JSON merge process completed successfully." -level "Information" -debugMode $debugMode -logFilePath $logFilePath
+    }
+    catch {
+        # Log any errors during the merge process
+        Log-Message -message "Error during JSON merge: $($_.Exception.Message)" -level "Error" -logFilePath $logFilePath
+        throw "Error during JSON merge: $($_.Exception.Message)"
     }
 }
