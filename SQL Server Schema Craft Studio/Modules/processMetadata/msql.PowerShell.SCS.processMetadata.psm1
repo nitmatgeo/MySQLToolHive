@@ -181,25 +181,15 @@ function Merge-JsonFiles {
         [string]$folderPathA, # Folder path for subfolder A
         [string]$folderPathB, # Folder path for subfolder B
         [string]$outputFolder, # Folder path to save merged JSON files
-        [ScriptBlock]$mergeLogic = { # Custom merge logic (default: merge Columns and add Metadata)
-            param ($jsonA, $jsonB)
-            [PSCustomObject]@{
-                schema_name = $jsonA.schema_name
-                table_name  = $jsonA.table_name
-                Columns     = $jsonA.Columns + $jsonB.Columns
-            }
-        },
         [string]$logFilePath = $null, # Optional: Path to a log file
         [bool]$debugMode = $false      # Enable or disable debugging output
     )
 
     # Log the start of the merge process
-    if ($debugMode) {
-        Log-Message -message "Starting JSON merge process..." -level "Information" -debugMode $debugMode -logFilePath $logFilePath
-        Log-Message -message "Folder A: $folderPathA" -level "Debug" -debugMode $debugMode -logFilePath $logFilePath
-        Log-Message -message "Folder B: $folderPathB" -level "Debug" -debugMode $debugMode -logFilePath $logFilePath
-        Log-Message -message "Output Folder: $outputFolder" -level "Debug" -debugMode $debugMode -logFilePath $logFilePath
-    }
+    Log-Message -message "Starting JSON merge process..." -level "Information" -debugMode $debugMode -logFilePath $logFilePath
+    Log-Message -message "Folder A: $folderPathA" -level "Debug" -debugMode $debugMode -logFilePath $logFilePath
+    Log-Message -message "Folder B: $folderPathB" -level "Debug" -debugMode $debugMode -logFilePath $logFilePath
+    Log-Message -message "Output Folder: $outputFolder" -level "Debug" -debugMode $debugMode -logFilePath $logFilePath
 
     try {
         # Ensure the output folder exists
@@ -209,7 +199,6 @@ function Merge-JsonFiles {
 
         # Get all JSON files from both folders
         $filesA = Get-ChildItem -Path $folderPathA -Filter "*.json" -File
-        $filesB = Get-ChildItem -Path $folderPathB -Filter "*.json" -File
 
         # Iterate through files in folder A
         foreach ($fileA in $filesA) {
@@ -219,28 +208,28 @@ function Merge-JsonFiles {
             try {
                 # Check if a matching file exists in folder B
                 if (Test-Path -Path $filePathB) {
-                    # Read both JSON files
-                    $jsonA = Get-Content -Path $fileA.FullName -Raw | ConvertFrom-Json
-                    $jsonB = Get-Content -Path $filePathB -Raw | ConvertFrom-Json
+                    # Read and deserialize both JSON files using Newtonsoft.Json
+                    $jsonA = [Newtonsoft.Json.JsonConvert]::DeserializeObject((Get-Content -Path $fileA.FullName -Raw))
+                    $jsonB = [Newtonsoft.Json.JsonConvert]::DeserializeObject((Get-Content -Path $filePathB -Raw))
 
-                    # Apply the custom merge logic
-                    $mergedJson = & $mergeLogic $jsonA $jsonB
-
-                    # Serialize the merged JSON to a string
-                    $mergedJsonString = $mergedJson | ConvertTo-Json -Depth 10 -Compress
+                    # Manually add Hierarchy properties from jsonB to jsonA
+                    $jsonA.FullTableName = $jsonB.FullTableName
+                    $jsonA.schema_priority = $jsonB.schema_priority
+                    $jsonA.section_level = $jsonB.section_level
+                    $jsonA.table_level = $jsonB.table_level
+                    $jsonA.Hierarchy = $jsonB.Hierarchy
+                    $jsonString = [Newtonsoft.Json.JsonConvert]::SerializeObject($jsonA, [Newtonsoft.Json.Formatting]::Indented)
 
                     # Save the merged JSON to the output folder
                     $outputFile = Join-Path -Path $outputFolder -ChildPath $fileName
-                    Set-Content -Path $outputFile -Value $mergedJsonString
+                    Set-Content -Path $outputFile -Value $jsonString
 
                     if ($debugMode) {
                         Log-Message -message "Merged file saved: $outputFile" -level "Information" -debugMode $debugMode -logFilePath $logFilePath
                     }
                 }
                 else {
-                    if ($debugMode) {
-                        Log-Message -message "No matching file found for $fileName in folder B." -level "Warning" -debugMode $debugMode -logFilePath $logFilePath
-                    }
+                    Log-Message -message "No matching file found for $fileName in folder B." -level "Warning" -debugMode $debugMode -logFilePath $logFilePath
                 }
             }
             catch {
@@ -248,9 +237,7 @@ function Merge-JsonFiles {
             }
         }
 
-        if ($debugMode) {
-            Log-Message -message "JSON merge process completed successfully." -level "Information" -debugMode $debugMode -logFilePath $logFilePath
-        }
+        Log-Message -message "JSON merge process completed successfully." -level "Information" -debugMode $debugMode -logFilePath $logFilePath
     }
     catch {
         # Log any errors during the merge process
