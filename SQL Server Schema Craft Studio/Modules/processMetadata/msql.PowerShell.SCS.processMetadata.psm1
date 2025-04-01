@@ -101,7 +101,7 @@ function Extract-ValidJsonContent {
 # Function to Process JSON Files
 function Process-JSON {
     param (
-        [string]$inputFile, # Input JSON file
+        [string]$jsonRawContent, # Input the valid JSON content from the raw file
         [string]$outputFolder, # Output folder for processed files
         [string]$startPattern, # Pattern for the starting line
         [string]$endPattern, # Pattern for the ending line
@@ -111,15 +111,12 @@ function Process-JSON {
 
     # Log the start of JSON processing
     Log-Message -message "Processing JSON files..." -level "Information" -debugMode $debugMode -logFilePath $logFilePath
-    Log-Message -message "Input File: $inputFile" -level "Debug" -debugMode $debugMode -logFilePath $logFilePath
     Log-Message -message "Output Folder: $outputFolder" -level "Debug" -debugMode $debugMode -logFilePath $logFilePath
 
     try {
-        # Load the valid JSON content from the raw file
-        $jsonRawContent = Extract-ValidJsonContent -rawFilePath $inputFile -startPattern $startPattern -endPattern $endPattern -debugMode $debugMode -logFilePath $logFilePath
-
+        
         # Validate the extracted JSON content
-        if ($null -eq $jsonRawContent) {
+        if (($null -eq $jsonRawContent) -or ($jsonRawContent -eq "")) {
             Log-Message -message "Error: Failed to extract valid JSON content from the raw file." -level "Error" -logFilePath $logFilePath
             throw "Failed to extract valid JSON content from the raw file."
         }
@@ -127,6 +124,7 @@ function Process-JSON {
         # Parse the JSON content
         try {
             $jsonContent = $jsonRawContent | ConvertFrom-Json -ErrorAction Stop
+            Log-Message -message "Items read from the input JSON Data: $($jsonContent.count)" -level "Debug" -debugMode $debugMode -logFilePath $logFilePath
         }
         catch {
             Log-Message -message "Error parsing JSON: $($_.Exception.Message)" -level "Error" -logFilePath $logFilePath
