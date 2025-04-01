@@ -103,8 +103,6 @@ function Process-JSON {
     param (
         [string]$jsonRawContent, # Input the valid JSON content from the raw file
         [string]$outputFolder, # Output folder for processed files
-        [string]$startPattern, # Pattern for the starting line
-        [string]$endPattern, # Pattern for the ending line
         [string]$logFilePath = $null, # Optional: Path to a log file
         [bool]$debugMode = $false # Enable or disable debugging output
     )
@@ -174,5 +172,89 @@ function Process-JSON {
         # Log errors during JSON processing
         Log-Message -message "Error processing JSON files: $($_.Exception.Message)" -level "Error" -logFilePath $logFilePath
         throw "Error processing JSON files: $($_.Exception.Message)"
+    }
+}
+
+# Function to Merge any 2 JSON Files
+function Merge-JsonFiles {
+    param (
+        [string]$folderPathA, # Folder path for subfolder A
+        [string]$folderPathB, # Folder path for subfolder B
+        [string]$outputFolder, # Folder path to save merged JSON files
+        [ScriptBlock]$mergeLogic = { # Custom merge logic (default: merge Columns and add Metadata)
+            param ($jsonA, $jsonB)
+            [PSCustomObject]@{
+                schema_name = $jsonA.schema_name
+                table_name  = $jsonA.table_name
+                Columns     = $jsonA.Columns + $jsonB.Columns
+            }
+        },
+        [string]$logFilePath = $null, # Optional: Path to a log file
+        [bool]$debugMode = $false      # Enable or disable debugging output
+    )
+
+    # Log the start of the merge process
+    if ($debugMode) {
+        Log-Message -message "Starting JSON merge process..." -level "Information" -debugMode $debugMode -logFilePath $logFilePath
+        Log-Message -message "Folder A: $folderPathA" -level "Debug" -debugMode $debugMode -logFilePath $logFilePath
+        Log-Message -message "Folder B: $folderPathB" -level "Debug" -debugMode $debugMode -logFilePath $logFilePath
+        Log-Message -message "Output Folder: $outputFolder" -level "Debug" -debugMode $debugMode -logFilePath $logFilePath
+    }
+
+    try {
+        # Ensure the output folder exists
+        if (-not (Test-Path -Path $outputFolder)) {
+            New-Item -ItemType Directory -Path $outputFolder -Force | Out-Null
+        }
+
+        # Get all JSON files from both folders
+        $filesA = Get-ChildItem -Path $folderPathA -Filter "*.json" -File
+        $filesB = Get-ChildItem -Path $folderPathB -Filter "*.json" -File
+
+        # Iterate through files in folder A
+        foreach ($fileA in $filesA) {
+            $fileName = $fileA.Name
+            $filePathB = Join-Path -Path $folderPathB -ChildPath $fileName
+
+            try {
+                # Check if a matching file exists in folder B
+                if (Test-Path -Path $filePathB) {
+                    # Read both JSON files
+                    $jsonA = Get-Content -Path $fileA.FullName -Raw | ConvertFrom-Json
+                    $jsonB = Get-Content -Path $filePathB -Raw | ConvertFrom-Json
+
+                    # Apply the custom merge logic
+                    $mergedJson = & $mergeLogic $jsonA $jsonB
+
+                    # Serialize the merged JSON to a string
+                    $mergedJsonString = $mergedJson | ConvertTo-Json -Depth 10 -Compress
+
+                    # Save the merged JSON to the output folder
+                    $outputFile = Join-Path -Path $outputFolder -ChildPath $fileName
+                    Set-Content -Path $outputFile -Value $mergedJsonString
+
+                    if ($debugMode) {
+                        Log-Message -message "Merged file saved: $outputFile" -level "Information" -debugMode $debugMode -logFilePath $logFilePath
+                    }
+                }
+                else {
+                    if ($debugMode) {
+                        Log-Message -message "No matching file found for $fileName in folder B." -level "Warning" -debugMode $debugMode -logFilePath $logFilePath
+                    }
+                }
+            }
+            catch {
+                Log-Message -message "Error merging file $($fileName): $($_.Exception.Message)" -level "Error" -logFilePath $logFilePath
+            }
+        }
+
+        if ($debugMode) {
+            Log-Message -message "JSON merge process completed successfully." -level "Information" -debugMode $debugMode -logFilePath $logFilePath
+        }
+    }
+    catch {
+        # Log any errors during the merge process
+        Log-Message -message "Error during JSON merge: $($_.Exception.Message)" -level "Error" -logFilePath $logFilePath
+        throw "Error during JSON merge: $($_.Exception.Message)"
     }
 }
