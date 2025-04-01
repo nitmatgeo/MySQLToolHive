@@ -69,6 +69,9 @@ function Compare-Data {
 
             $action = ""
             $additionalRemark = ""
+            $table_created_timestamp = "" 
+            $table_last_updated_timestamp = ""
+            $last_accessed_timestamp = ""
             $changedColumns = @()
 
             # Retrieve SHA256Hash values
@@ -78,11 +81,17 @@ function Compare-Data {
             # Determine the action and additional remarks
             if ($null -eq $recordN) {
                 $action = "Deleted"
-                $additionalRemark = "Deleted from version (n-1): $($recordNMinus1.FileName)"
+                $additionalRemark = "Deleted from version (n-1)"
+                $table_created_timestamp = $($recordNMinus1.table_created_timestamp) 
+                $table_last_updated_timestamp = $($recordNMinus1.table_last_updated_timestamp)
+                $last_accessed_timestamp = $($recordNMinus1.last_accessed_timestamp)
             }
             elseif ($null -eq $recordNMinus1) {
                 $action = "Added"
-                $additionalRemark = "Added in version (n): $($recordN.FileName)"
+                $additionalRemark = "Added in version (n)"
+                $table_created_timestamp = $($recordN.table_created_timestamp) 
+                $table_last_updated_timestamp = $($recordN.table_last_updated_timestamp)
+                $last_accessed_timestamp = $($recordN.last_accessed_timestamp)
             }
             else {
                 # Compare SHA256Hash values
@@ -113,10 +122,16 @@ function Compare-Data {
                 if ($changedColumns.Count -gt 0) {
                     $action = "Changed"
                     $additionalRemark = "Differences detected in columns: $($changedColumns -join ', ')"
+                    $table_created_timestamp = $($recordN.table_created_timestamp) 
+                    $table_last_updated_timestamp = $($recordN.table_last_updated_timestamp)
+                    $last_accessed_timestamp = $($recordN.last_accessed_timestamp)
                 }
                 else {
                     $action = "Unchanged"
                     $additionalRemark = "No changes detected"
+                    $table_created_timestamp = $($recordN.table_created_timestamp) 
+                    $table_last_updated_timestamp = $($recordN.table_last_updated_timestamp)
+                    $last_accessed_timestamp = $($recordN.last_accessed_timestamp)
                 }
             }
 
@@ -134,6 +149,9 @@ function Compare-Data {
                 else {
                     $null
                 }
+                TableCreatedOn            = $table_created_timestamp
+                TableUpdatedOn            = $table_last_updated_timestamp
+                MetadataExtractedOn       = $last_accessed_timestamp
             }
         }
         catch {

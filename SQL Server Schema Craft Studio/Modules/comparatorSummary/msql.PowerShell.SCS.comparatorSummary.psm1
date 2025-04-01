@@ -226,6 +226,11 @@ function Classify-Tables {
             "Changed"
         }
 
+        # Append the Timestamps from the Schema Metadata
+        $TableCreatedOn = ($tableGroup.Group | Select-Object -ExpandProperty TableCreatedOn -First 1)
+        $TableUpdatedOn = ($tableGroup.Group | Select-Object -ExpandProperty TableUpdatedOn -First 1)
+        $MetadataExtractedOn = ($tableGroup.Group | Select-Object -ExpandProperty MetadataExtractedOn -First 1)
+
         # Get the list of changed columns for the table (extract only column names)
         $changedColumns = $tableGroup.Group | Where-Object { $_.Action -eq "Changed" } | ForEach-Object {
             ($_.'FullFieldName' -split '\.')[-1] # Extract only the column name (last part of FullFieldName)
@@ -234,11 +239,14 @@ function Classify-Tables {
 
         # Add the table-level classification
         $classifiedTables += [PSCustomObject]@{
-            FullTableName  = $tableName
-            SchemaName     = $schemaName
-            TableName      = $tableNameOnly
-            ChangeType     = $changeType
-            ChangedColumns = if ($changedColumnsList) { $changedColumnsList } else { "N/A" }
+            FullTableName       = $tableName
+            SchemaName          = $schemaName
+            TableName           = $tableNameOnly
+            ChangeType          = $changeType
+            TableCreatedOn      = $TableCreatedOn
+            TableUpdatedOn      = $TableUpdatedOn
+            MetadataExtractedOn = $MetadataExtractedOn
+            ChangedColumns      = if ($changedColumnsList) { $changedColumnsList } else { "N/A" }
         }
     }
 
