@@ -54,21 +54,24 @@ function Log-Message {
 # Export the Log-Message function
 Export-ModuleMember -Function Log-Message
 
-# Function: Initialize-Script
-function Initialize-Script {
+# Function: Initialize-Folder
+function Initialize-Folder {
     param (
-        [string]$rootPath,             # Root path for the JSON files
-        [string]$version,              # Version folder (e.g., "version (n-1)")
-        [string]$rawFileName,          # Raw partial-JSON file name (e.g., "00.rawSchemaMetadataOutput.dat")
-        [string]$logFilePath = $null,  # Optional: Path to a log file
+        [string]$rootPath, # Root path for the JSON files
+        [string]$version, # Version folder (e.g., "version (n-1)")
+        [string]$rawFileName = $null, # Raw partial-JSON file name (e.g., "00.rawSchemaMetadataOutput.dat")
+        [string]$logFilePath = $null, # Optional: Path to a log file
         [bool]$debugMode               # Enable or disable debugging output
     )
 
     # Generate a 5-character hex string based on the raw file name
-    $hashTempFolder = [System.BitConverter]::ToString((New-Object -TypeName System.Security.Cryptography.SHA256Managed).ComputeHash([System.Text.Encoding]::UTF8.GetBytes($rawFileName))).Replace("-", "").Substring(0, 5)
+    if ($null -ne $rawFileName -and $rawFileName -ne "") {
+        $hashTempFolder = [System.BitConverter]::ToString((New-Object -TypeName System.Security.Cryptography.SHA256Managed).ComputeHash([System.Text.Encoding]::UTF8.GetBytes($rawFileName))).Replace("-", "").Substring(0, 5)
+    }
 
     # Define the input JSON file and output folder based on the parameters
     $inputFile = Join-Path -Path $rootPath -ChildPath "$version\$rawFileName"
+    $rootFolder = Join-Path -Path $rootPath -ChildPath "$version"
     $outputFolder = Join-Path -Path $rootPath -ChildPath "$version\$hashTempFolder"
 
     # Log debugging information
@@ -103,6 +106,7 @@ function Initialize-Script {
     return @{
         InputFile    = $inputFile
         OutputFolder = $outputFolder
+        RootFolder   = $rootFolder
     }
 }
 
@@ -146,4 +150,4 @@ function Check-Modules {
 }
 
 # Export the functions
-Export-ModuleMember -Function Initialize-Script, Check-Modules
+Export-ModuleMember -Function Initialize-Folder, Check-Modules
