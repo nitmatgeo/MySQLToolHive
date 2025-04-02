@@ -226,7 +226,8 @@ function Classify-Tables {
             "Changed"
         }
 
-        # Append the Timestamps from the Schema Metadata
+        # Append the Table Hierarchy & Timestamps from the Schema Metadata
+        $TableHierarchy = ($tableGroup.Group | Select-Object -ExpandProperty TableHierarchy -First 1)
         $TableCreatedOn = ($tableGroup.Group | Select-Object -ExpandProperty TableCreatedOn -First 1)
         $TableUpdatedOn = ($tableGroup.Group | Select-Object -ExpandProperty TableUpdatedOn -First 1)
         $MetadataExtractedOn = ($tableGroup.Group | Select-Object -ExpandProperty MetadataExtractedOn -First 1)
@@ -243,6 +244,7 @@ function Classify-Tables {
             SchemaName          = $schemaName
             TableName           = $tableNameOnly
             ChangeType          = $changeType
+            TableHierarchy      = $TableHierarchy
             TableCreatedOn      = $TableCreatedOn
             TableUpdatedOn      = $TableUpdatedOn
             MetadataExtractedOn = $MetadataExtractedOn
