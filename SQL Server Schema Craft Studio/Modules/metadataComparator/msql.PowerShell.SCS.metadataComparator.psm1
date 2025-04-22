@@ -21,9 +21,15 @@ function Load-JsonData {
             # Load the JSON content
             $jsonContent = Get-Content -Path $filePath -Raw | ConvertFrom-Json -ErrorAction Stop
 
+            # Extract the hierarchy
+            $Hierarchy = $jsonContent.Hierarchy
+
             # Iterate through each column and extract FullFieldName and other details
             foreach ($column in $jsonContent.Columns) {
                 $fullFieldName = $column.FullFieldName
+                 
+                # Add the Hierarchy property to the column
+                $column | Add-Member -MemberType NoteProperty -Name "Hierarchy" -Value "$Hierarchy"
 
                 if ($null -ne $fullFieldName) {
                     # Store all properties of the column in the hashtable
@@ -85,6 +91,7 @@ function Compare-Data {
                 $table_created_timestamp = $($recordNMinus1.table_created_timestamp) 
                 $table_last_updated_timestamp = $($recordNMinus1.table_last_updated_timestamp)
                 $last_accessed_timestamp = $($recordNMinus1.last_accessed_timestamp)
+                $table_hierarchy = $($recordNMinus1.Hierarchy) 
             }
             elseif ($null -eq $recordNMinus1) {
                 $action = "Added"
@@ -92,6 +99,7 @@ function Compare-Data {
                 $table_created_timestamp = $($recordN.table_created_timestamp) 
                 $table_last_updated_timestamp = $($recordN.table_last_updated_timestamp)
                 $last_accessed_timestamp = $($recordN.last_accessed_timestamp)
+                $table_hierarchy = $($recordN.Hierarchy) 
             }
             else {
                 # Compare SHA256Hash values
@@ -125,6 +133,7 @@ function Compare-Data {
                     $table_created_timestamp = $($recordN.table_created_timestamp) 
                     $table_last_updated_timestamp = $($recordN.table_last_updated_timestamp)
                     $last_accessed_timestamp = $($recordN.last_accessed_timestamp)
+                    $table_hierarchy = $($recordN.Hierarchy) 
                 }
                 else {
                     $action = "Unchanged"
@@ -132,6 +141,7 @@ function Compare-Data {
                     $table_created_timestamp = $($recordN.table_created_timestamp) 
                     $table_last_updated_timestamp = $($recordN.table_last_updated_timestamp)
                     $last_accessed_timestamp = $($recordN.last_accessed_timestamp)
+                    $table_hierarchy = $($recordN.Hierarchy) 
                 }
             }
 
@@ -149,6 +159,7 @@ function Compare-Data {
                 else {
                     $null
                 }
+                TableHierarchy            = $table_hierarchy                
                 TableCreatedOn            = $table_created_timestamp
                 TableUpdatedOn            = $table_last_updated_timestamp
                 MetadataExtractedOn       = $last_accessed_timestamp
